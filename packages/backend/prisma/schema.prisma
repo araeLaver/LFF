@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String             @id @default(cuid())
+  email           String             @unique
+  password        String
+  role            Role               @default(USER)
+  profile         Profile?
+  wallet          Wallet?
+  submissions     QuestSubmission[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  creator         Creator?
+  qrRedemptions   QRCodeRedemption[]
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  nickname  String   @unique
+  bio       String?
+  avatarUrl String?
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Wallet {
+  id         String   @id @default(cuid())
+  address    String   @unique
+  privateKey String // Note: In a real app, this should be encrypted and stored securely
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String   @unique
+  nfts       NFT[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Creator {
+  id           String         @id @default(cuid())
+  user         User           @relation(fields: [userId], references: [id])
+  userId       String         @unique
+  quests       Quest[]
+  gatedContent GatedContent[]
+  events       Event[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  eventDate   DateTime
+  creator     Creator   @relation(fields: [creatorId], references: [id])
+  creatorId   String
+  qrcodes     QRCode[]
+  rewardNft   NFT?      @relation(fields: [rewardNftId], references: [id])
+  rewardNftId String?   @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model QRCode {
+  id          String             @id @default(cuid())
+  code        String             @unique
+  event       Event              @relation(fields: [eventId], references: [id])
+  eventId     String
+  redemptions QRCodeRedemption[]
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model QRCodeRedemption {
+  id        String   @id @default(cuid())
+  qrcode    QRCode   @relation(fields: [qrCodeId], references: [id])
+  qrCodeId  String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([qrCodeId, userId], name: "userRedeemedOnce")
+}
+
+model Quest {
+  id           String            @id @default(cuid())
+  title        String
+  description  String
+  rewardPoints Int
+  creator      Creator           @relation(fields: [creatorId], references: [id])
+  creatorId    String
+  submissions  QuestSubmission[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model QuestSubmission {
+  id       String           @id @default(cuid())
+  user     User             @relation(fields: [userId], references: [id])
+  userId   String
+  quest    Quest            @relation(fields: [questId], references: [id])
+  questId  String
+  status   SubmissionStatus @default(PENDING)
+  proofUrl String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model GatedContent {
+  id            String   @id @default(cuid())
+  title         String
+  content       String
+  requiredNft   NFT?     @relation(fields: [requiredNftId], references: [id])
+  requiredNftId String?
+  creator       Creator  @relation(fields: [creatorId], references: [id])
+  creatorId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model NFT {
+  id              String         @id @default(cuid())
+  tokenId         String         @unique
+  contractAddress String
+  metadataUrl     String
+  owner           Wallet         @relation(fields: [ownerId], references: [id])
+  ownerId         String
+  gatedContent    GatedContent[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  eventRewardFor  Event?
+}
+
+enum Role {
+  USER
+  CREATOR
+  ADMIN
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
