@@ -1,0 +1,19 @@
+# Dependencies
+node_modules
+
+# Build
+artifacts
+cache
+typechain-types
+
+# Environment (NEVER commit!)
+.env
+
+# IDE
+.vscode
+.idea
+
+# Misc
+*.log
+coverage
+coverage.json

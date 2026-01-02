@@ -98,7 +98,19 @@ export default function QuestDetailPage() {
         Back to Quests
       </Link>
 
-      <Card variant="bordered">
+      <Card variant="bordered" className="overflow-hidden">
+        {/* Quest Image */}
+        {quest.imageUrl && (
+          <div className="relative h-64 w-full">
+            <img
+              src={quest.imageUrl}
+              alt={quest.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+          </div>
+        )}
+
         <CardHeader>
           <div className="flex items-center gap-3 mb-4">
             <span className={`inline-block px-3 py-1 text-sm font-medium rounded ${typeColors[quest.type]}`}>

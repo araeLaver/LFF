@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
 import { Event, CreateEventDto } from '@/types';
-import { Card, CardHeader, CardTitle, CardContent, Button, Input, Loading } from '@/components/ui';
+import { Card, CardHeader, CardTitle, CardContent, Button, Input, Loading, ImageUpload } from '@/components/ui';
 
 export default function CreatorEventsPage() {
   const router = useRouter();
@@ -104,6 +104,7 @@ export default function CreatorEventsPage() {
 function CreateEventForm({ onSuccess, onCancel }: { onSuccess: (event: Event) => void; onCancel: () => void }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [location, setLocation] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -124,6 +125,9 @@ function CreateEventForm({ onSuccess, onCancel }: { onSuccess: (event: Event) =>
         endDate: new Date(endDate).toISOString(),
       };
 
+      if (imageUrl) {
+        data.imageUrl = imageUrl;
+      }
       if (location) {
         data.location = location;
       }
@@ -156,6 +160,13 @@ function CreateEventForm({ onSuccess, onCancel }: { onSuccess: (event: Event) =>
           required
         />
       </div>
+
+      <ImageUpload
+        category="events"
+        value={imageUrl}
+        onChange={setImageUrl}
+        label="Event Image (optional)"
+      />
 
       <Input label="Location (optional)" value={location} onChange={(e) => setLocation(e.target.value)} />
 

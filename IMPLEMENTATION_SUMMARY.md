@@ -298,12 +298,74 @@ NEXT_PUBLIC_API_URL=http://localhost:3001/api
 
 ---
 
+## 블록체인 통합 (packages/contracts)
+
+### 스마트 컨트랙트
+```
+contracts/
+└── contracts/
+    └── LFFSBT.sol    # Soulbound Token (ERC-721 기반, 양도 불가)
+```
+
+### 주요 기능
+- **SBT 민팅**: 이벤트 참석/퀘스트 완료 시 자동 발급
+- **양도 불가**: transfer, approve 함수 비활성화
+- **메타데이터**: on-chain referenceId로 이벤트/퀘스트 추적
+- **배치 민팅**: 다수 사용자 동시 민팅 지원
+
+### 환경 설정
+```env
+# packages/contracts/.env
+DEPLOYER_PRIVATE_KEY=0x...
+POLYGON_AMOY_RPC_URL=https://rpc-amoy.polygon.technology
+```
+
+### 배포
+```bash
+cd packages/contracts
+npm run compile          # 컨트랙트 컴파일
+npm run deploy:amoy      # Polygon Amoy 테스트넷 배포
+```
+
+---
+
+## Backend 블록체인 모듈
+
+### 구조
+```
+src/blockchain/
+├── blockchain.module.ts
+├── blockchain.service.ts    # ethers.js 연동, 민팅 로직
+├── metadata.service.ts      # NFT 메타데이터 생성
+├── metadata.controller.ts   # 메타데이터 API 엔드포인트
+└── abi/
+    └── LFFSBT.json          # 컨트랙트 ABI
+```
+
+### API 엔드포인트
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/metadata/event/:eventId/:userId | 이벤트 SBT 메타데이터 |
+| GET | /api/metadata/quest/:questId/:userId | 퀘스트 SBT 메타데이터 |
+| GET | /api/metadata/image/event/:eventId | 이벤트 SBT 이미지 (SVG) |
+| GET | /api/metadata/image/quest/:questId | 퀘스트 SBT 이미지 (SVG) |
+
+### 환경 설정
+```env
+# packages/backend/.env 추가
+POLYGON_RPC_URL="https://rpc-amoy.polygon.technology"
+MINTER_PRIVATE_KEY="0x..."
+SBT_CONTRACT_ADDRESS="배포된 컨트랙트 주소"
+```
+
+---
+
 ## 다음 단계 (TODO)
 
-1. **블록체인 통합**
-   - Polygon PoS 연동
-   - NFT 민팅 컨트랙트 배포
-   - 실제 NFT 민팅 구현
+1. **~~블록체인 통합~~** ✅
+   - ~~Polygon PoS 연동~~
+   - ~~NFT 민팅 컨트랙트 배포~~
+   - ~~실제 NFT 민팅 구현~~
 
 2. **기능 확장**
    - 이미지 업로드 (S3/Cloudinary)

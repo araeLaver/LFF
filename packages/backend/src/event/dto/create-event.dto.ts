@@ -11,6 +11,10 @@ export class CreateEventDto {
   @MaxLength(1000)
   description?: string;
 
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
   @IsDateString()
   eventDate: string;
 }

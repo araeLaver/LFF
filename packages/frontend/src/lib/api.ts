@@ -24,11 +24,41 @@ interface RequestOptions {
   body?: unknown;
 }
 
+interface UploadResponse {
+  url: string;
+  filename: string;
+  size: number;
+}
+
 class ApiClient {
   private baseUrl: string;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
+  }
+
+  private async uploadFile<T>(endpoint: string, file: File): Promise<T> {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
   }
 
   private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
@@ -241,6 +271,11 @@ class ApiClient {
 
   async getNftsByContract(contractAddress: string): Promise<NFT[]> {
     return this.request<NFT[]>(`/nfts/contract/${contractAddress}`);
+  }
+
+  // Upload
+  async uploadImage(file: File, category: 'quests' | 'events' | 'profiles'): Promise<UploadResponse> {
+    return this.uploadFile<UploadResponse>(`/upload/image/${category}`, file);
   }
 }
 

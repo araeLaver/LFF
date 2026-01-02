@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
 import { NFT, QuestSubmission, Event } from '@/types';
 import { Card, CardHeader, CardTitle, CardContent, Button, Input, Loading } from '@/components/ui';
+import { NFTCard, NFTDetailModal } from '@/components/nft';
 
 type TabType = 'nfts' | 'submissions' | 'attendances' | 'profile';
 
@@ -163,28 +164,122 @@ export default function MyPage() {
 }
 
 function NFTsTab({ nfts }: { nfts: NFT[] }) {
+  const [selectedNft, setSelectedNft] = useState<NFT | null>(null);
+
+  const eventTokens = nfts.filter((nft) => nft.tokenType === 'EVENT_ATTENDANCE');
+  const questTokens = nfts.filter((nft) => nft.tokenType === 'QUEST_COMPLETION');
+  const otherTokens = nfts.filter((nft) => !nft.tokenType);
+
   if (nfts.length === 0) {
     return (
       <Card variant="bordered" className="text-center py-12">
-        <p className="text-gray-500 mb-4">You don&apos;t have any NFTs yet</p>
-        <p className="text-sm text-gray-400">Complete quests and attend events to earn NFTs</p>
+        <div className="max-w-md mx-auto">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+            <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No NFTs Yet</h3>
+          <p className="text-gray-500 mb-6">Complete quests and attend events to earn Soulbound Tokens!</p>
+          <div className="flex gap-3 justify-center">
+            <Link href="/quests">
+              <Button variant="outline" size="sm">Browse Quests</Button>
+            </Link>
+            <Link href="/events">
+              <Button size="sm">View Events</Button>
+            </Link>
+          </div>
+        </div>
       </Card>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {nfts.map((nft) => (
-        <Card key={nft.id} variant="bordered" className="overflow-hidden">
-          <div className="aspect-square bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-            <span className="text-white text-4xl font-bold">NFT</span>
+    <div className="space-y-8">
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+          <div className="flex items-center gap-2 text-purple-600 mb-1">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span className="text-sm font-medium">Events</span>
           </div>
-          <CardContent className="p-3">
-            <p className="font-medium text-sm truncate">Token #{nft.tokenId}</p>
-            <p className="text-xs text-gray-500 truncate">{nft.contractAddress}</p>
-          </CardContent>
-        </Card>
-      ))}
+          <p className="text-2xl font-bold text-gray-900">{eventTokens.length}</p>
+        </div>
+        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100">
+          <div className="flex items-center gap-2 text-blue-600 mb-1">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-medium">Quests</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{questTokens.length}</p>
+        </div>
+        <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100">
+          <div className="flex items-center gap-2 text-gray-600 mb-1">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <span className="text-sm font-medium">Total</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{nfts.length}</p>
+        </div>
+      </div>
+
+      {/* Event Tokens */}
+      {eventTokens.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+            Event Attendance ({eventTokens.length})
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {eventTokens.map((nft) => (
+              <NFTCard key={nft.id} nft={nft} onClick={() => setSelectedNft(nft)} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Quest Tokens */}
+      {questTokens.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+            Quest Completion ({questTokens.length})
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {questTokens.map((nft) => (
+              <NFTCard key={nft.id} nft={nft} onClick={() => setSelectedNft(nft)} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Other Tokens */}
+      {otherTokens.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-gray-500"></span>
+            Other Tokens ({otherTokens.length})
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {otherTokens.map((nft) => (
+              <NFTCard key={nft.id} nft={nft} onClick={() => setSelectedNft(nft)} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {selectedNft && (
+        <NFTDetailModal
+          nft={selectedNft}
+          isOpen={!!selectedNft}
+          onClose={() => setSelectedNft(null)}
+        />
+      )}
     </div>
   );
 }

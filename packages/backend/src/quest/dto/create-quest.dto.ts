@@ -1,4 +1,4 @@
-import { IsString, IsInt, Min, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsInt, Min, MinLength, MaxLength, IsOptional, IsUrl } from 'class-validator';
 
 export class CreateQuestDto {
   @IsString()
@@ -10,6 +10,10 @@ export class CreateQuestDto {
   @MinLength(10)
   @MaxLength(1000)
   description: string;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 
   @IsInt()
   @Min(1)

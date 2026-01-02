@@ -3,8 +3,11 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BlockchainService } from '../blockchain/blockchain.service';
+import { MetadataService } from '../blockchain/metadata.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,7 +15,13 @@ import * as QRCode from 'qrcode';
 
 @Injectable()
 export class EventService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(EventService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private blockchainService: BlockchainService,
+    private metadataService: MetadataService,
+  ) {}
 
   async createEvent(creatorId: string, dto: CreateEventDto) {
     return this.prisma.event.create({
@@ -151,12 +160,53 @@ export class EventService {
       },
     });
 
-    // TODO: Mint NFT for user (integrate with blockchain service)
+    // Mint SBT for event attendance
+    let mintResult = null;
+    if (this.blockchainService.isReady()) {
+      try {
+        // Get user's wallet address
+        const wallet = await this.prisma.wallet.findUnique({
+          where: { userId },
+        });
+
+        if (wallet) {
+          // Generate metadata URI
+          const metadataUri = `${process.env.BACKEND_URL || 'http://localhost:3001'}/api/metadata/event/${qrcode.eventId}/${userId}`;
+
+          // Mint SBT
+          mintResult = await this.blockchainService.mintEventAttendance(
+            wallet.address,
+            metadataUri,
+            qrcode.eventId,
+          );
+
+          this.logger.log(
+            `SBT minted for user ${userId}: tokenId=${mintResult.tokenId}`,
+          );
+
+          // Save NFT record in database
+          await this.prisma.nFT.create({
+            data: {
+              tokenId: mintResult.tokenId,
+              contractAddress: this.blockchainService.getContractAddress(),
+              metadataUrl: metadataUri,
+              ownerId: wallet.id,
+            },
+          });
+        }
+      } catch (error) {
+        this.logger.error(`Failed to mint SBT: ${error.message}`);
+        // Don't fail the redemption if minting fails
+      }
+    } else {
+      this.logger.warn('Blockchain service not initialized, skipping SBT mint');
+    }
 
     return {
       message: 'QR code redeemed successfully',
       event: qrcode.event,
       redemption,
+      mintResult,
     };
   }
 

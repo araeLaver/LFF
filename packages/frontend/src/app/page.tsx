@@ -142,18 +142,41 @@ function QuestCard({ quest }: { quest: Quest }) {
 
   return (
     <Link href={`/quests/${quest.id}`}>
-      <Card variant="bordered" className="h-full hover:shadow-lg transition-shadow cursor-pointer">
-        <CardHeader>
-          <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${typeColors[quest.type]}`}>
-            {quest.type.replace('_', ' ')}
-          </span>
-          <CardTitle className="mt-2 line-clamp-2">{quest.title}</CardTitle>
+      <Card variant="bordered" className="h-full hover:shadow-lg transition-shadow cursor-pointer overflow-hidden">
+        {/* Quest Image */}
+        {quest.imageUrl ? (
+          <div className="relative h-32 w-full">
+            <img
+              src={quest.imageUrl}
+              alt={quest.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-2 left-2">
+              <span className={`inline-block px-2 py-1 text-xs font-medium rounded shadow-sm ${typeColors[quest.type]}`}>
+                {quest.type.replace('_', ' ')}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="h-24 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+            <svg className="w-10 h-10 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          </div>
+        )}
+        <CardHeader className="pb-2">
+          {!quest.imageUrl && (
+            <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${typeColors[quest.type]}`}>
+              {quest.type.replace('_', ' ')}
+            </span>
+          )}
+          <CardTitle className="mt-2 line-clamp-2 text-base">{quest.title}</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-gray-600 text-sm line-clamp-2 mb-4">{quest.description}</p>
+        <CardContent className="pt-0">
+          <p className="text-gray-600 text-sm line-clamp-2 mb-3">{quest.description}</p>
           <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-500">{quest.creator?.displayName || 'Creator'}</span>
-            <span className="font-medium text-blue-600">
+            <span className="text-gray-500 truncate max-w-[100px]">{quest.creator?.displayName || 'Creator'}</span>
+            <span className="font-medium text-blue-600 whitespace-nowrap">
               +{quest.rewardAmount} {quest.rewardType}
             </span>
           </div>
@@ -169,27 +192,60 @@ function EventCard({ event }: { event: Event }) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
+  const statusColors: Record<string, string> = {
+    UPCOMING: 'bg-blue-500',
+    ONGOING: 'bg-green-500',
+    ENDED: 'bg-gray-500',
+    CANCELLED: 'bg-red-500',
+  };
+
   return (
     <Link href={`/events/${event.id}`}>
-      <Card variant="bordered" className="h-full hover:shadow-lg transition-shadow cursor-pointer">
-        <CardHeader>
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            <span>{formatDate(event.startDate)}</span>
-            {event.location && (
-              <>
-                <span>-</span>
-                <span>{event.location}</span>
-              </>
-            )}
+      <Card variant="bordered" className="h-full hover:shadow-lg transition-shadow cursor-pointer overflow-hidden">
+        {/* Event Image */}
+        {event.imageUrl ? (
+          <div className="relative h-32 w-full">
+            <img
+              src={event.imageUrl}
+              alt={event.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-2 left-2 flex items-center gap-2">
+              <span className={`inline-block px-2 py-1 text-xs font-medium rounded text-white shadow-sm ${statusColors[event.status]}`}>
+                {event.status}
+              </span>
+            </div>
+            <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+              {formatDate(event.startDate)}
+            </div>
           </div>
-          <CardTitle className="line-clamp-2">{event.title}</CardTitle>
+        ) : (
+          <div className="h-24 bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center relative">
+            <svg className="w-10 h-10 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
+              {formatDate(event.startDate)}
+            </div>
+          </div>
+        )}
+        <CardHeader className="pb-2">
+          {!event.imageUrl && (
+            <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+              <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded text-white ${statusColors[event.status]}`}>
+                {event.status}
+              </span>
+              {event.location && <span className="truncate">{event.location}</span>}
+            </div>
+          )}
+          <CardTitle className="line-clamp-2 text-base">{event.title}</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-gray-600 text-sm line-clamp-2 mb-4">{event.description}</p>
+        <CardContent className="pt-0">
+          <p className="text-gray-600 text-sm line-clamp-2 mb-3">{event.description}</p>
           <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-500">{event.creator?.displayName || 'Creator'}</span>
+            <span className="text-gray-500 truncate max-w-[100px]">{event.creator?.displayName || 'Creator'}</span>
             {event.maxAttendees && (
-              <span className="text-gray-500">{event._count?.attendances || 0}/{event.maxAttendees}</span>
+              <span className="text-gray-500 whitespace-nowrap">{event._count?.attendances || 0}/{event.maxAttendees}</span>
             )}
           </div>
         </CardContent>

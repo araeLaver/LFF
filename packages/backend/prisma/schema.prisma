@@ -3,7 +3,6 @@
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -61,6 +60,7 @@ model Event {
   id          String    @id @default(cuid())
   title       String
   description String?
+  imageUrl    String?
   eventDate   DateTime
   creator     Creator   @relation(fields: [creatorId], references: [id])
   creatorId   String
@@ -97,6 +97,7 @@ model Quest {
   id           String            @id @default(cuid())
   title        String
   description  String
+  imageUrl     String?
   rewardPoints Int
   creator      Creator           @relation(fields: [creatorId], references: [id])
   creatorId    String

@@ -54,6 +54,7 @@ export interface Quest {
   creatorId: string;
   title: string;
   description: string;
+  imageUrl?: string;
   type: QuestType;
   requirements?: Record<string, unknown>;
   rewardType: string;
@@ -91,6 +92,7 @@ export interface Event {
   creatorId: string;
   title: string;
   description: string;
+  imageUrl?: string;
   location?: string;
   startDate: string;
   endDate: string;
@@ -129,6 +131,8 @@ export interface EventAttendance {
 }
 
 // NFT types
+export type TokenType = 'EVENT_ATTENDANCE' | 'QUEST_COMPLETION';
+
 export interface NFT {
   id: string;
   tokenId: string;
@@ -137,6 +141,13 @@ export interface NFT {
   ownerId: string;
   createdAt: string;
   owner?: Wallet;
+  // On-chain metadata
+  tokenType?: TokenType | null;
+  referenceId?: string | null;
+  mintedAt?: string | null;
+  // Related data
+  event?: Event | null;
+  quest?: Quest | null;
 }
 
 // Gated Content types
@@ -191,6 +202,7 @@ export interface PaginatedResponse<T> {
 export interface CreateQuestDto {
   title: string;
   description: string;
+  imageUrl?: string;
   type: QuestType;
   requirements?: Record<string, unknown>;
   rewardType: string;
@@ -203,6 +215,7 @@ export interface CreateQuestDto {
 export interface CreateEventDto {
   title: string;
   description: string;
+  imageUrl?: string;
   location?: string;
   startDate: string;
   endDate: string;

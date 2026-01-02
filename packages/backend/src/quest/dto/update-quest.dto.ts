@@ -14,6 +14,10 @@ export class UpdateQuestDto {
   description?: string;
 
   @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
   @IsInt()
   @Min(1)
   rewardPoints?: number;

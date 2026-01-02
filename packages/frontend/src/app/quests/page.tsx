@@ -107,16 +107,44 @@ function QuestCard({ quest }: { quest: Quest }) {
 
   return (
     <Link href={`/quests/${quest.id}`}>
-      <Card variant="bordered" className="h-full hover:shadow-lg transition-shadow cursor-pointer">
-        <CardHeader>
-          <div className="flex items-center justify-between mb-2">
-            <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${typeColors[quest.type]}`}>
-              {quest.type.replace('_', ' ')}
-            </span>
-            {quest.endDate && (
-              <span className="text-xs text-gray-500">Ends {formatDate(quest.endDate)}</span>
-            )}
+      <Card variant="bordered" className="h-full hover:shadow-lg transition-shadow cursor-pointer overflow-hidden">
+        {/* Quest Image */}
+        {quest.imageUrl ? (
+          <div className="relative h-40 w-full">
+            <img
+              src={quest.imageUrl}
+              alt={quest.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-2 left-2">
+              <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${typeColors[quest.type]}`}>
+                {quest.type.replace('_', ' ')}
+              </span>
+            </div>
           </div>
+        ) : (
+          <div className="h-32 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+            <svg className="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          </div>
+        )}
+        <CardHeader className="pb-2">
+          {!quest.imageUrl && (
+            <div className="flex items-center justify-between mb-2">
+              <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${typeColors[quest.type]}`}>
+                {quest.type.replace('_', ' ')}
+              </span>
+              {quest.endDate && (
+                <span className="text-xs text-gray-500">Ends {formatDate(quest.endDate)}</span>
+              )}
+            </div>
+          )}
+          {quest.imageUrl && quest.endDate && (
+            <div className="flex justify-end mb-2">
+              <span className="text-xs text-gray-500">Ends {formatDate(quest.endDate)}</span>
+            </div>
+          )}
           <CardTitle className="line-clamp-2">{quest.title}</CardTitle>
         </CardHeader>
         <CardContent>

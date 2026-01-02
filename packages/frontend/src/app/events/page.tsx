@@ -116,13 +116,36 @@ function EventCard({ event }: { event: Event }) {
 
   return (
     <Link href={`/events/${event.id}`}>
-      <Card variant="bordered" className="h-full hover:shadow-lg transition-shadow cursor-pointer">
-        <CardHeader>
-          <div className="flex items-center justify-between mb-2">
-            <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${statusColors[event.status]}`}>
-              {event.status}
-            </span>
+      <Card variant="bordered" className="h-full hover:shadow-lg transition-shadow cursor-pointer overflow-hidden">
+        {/* Event Image */}
+        {event.imageUrl ? (
+          <div className="relative h-40 w-full">
+            <img
+              src={event.imageUrl}
+              alt={event.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-2 left-2">
+              <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${statusColors[event.status]}`}>
+                {event.status}
+              </span>
+            </div>
           </div>
+        ) : (
+          <div className="h-32 bg-gradient-to-br from-green-100 to-blue-100 flex items-center justify-center">
+            <svg className="w-12 h-12 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+        )}
+        <CardHeader className="pb-2">
+          {!event.imageUrl && (
+            <div className="flex items-center justify-between mb-2">
+              <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${statusColors[event.status]}`}>
+                {event.status}
+              </span>
+            </div>
+          )}
           <CardTitle className="line-clamp-2">{event.title}</CardTitle>
         </CardHeader>
         <CardContent>

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
 import { Quest, QuestType, CreateQuestDto } from '@/types';
-import { Card, CardHeader, CardTitle, CardContent, Button, Input, Loading } from '@/components/ui';
+import { Card, CardHeader, CardTitle, CardContent, Button, Input, Loading, ImageUpload } from '@/components/ui';
 
 export default function CreatorQuestsPage() {
   const router = useRouter();
@@ -104,6 +104,7 @@ export default function CreatorQuestsPage() {
 function CreateQuestForm({ onSuccess, onCancel }: { onSuccess: (quest: Quest) => void; onCancel: () => void }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [type, setType] = useState<QuestType>('CUSTOM');
   const [rewardType, setRewardType] = useState('POINTS');
   const [rewardAmount, setRewardAmount] = useState('100');
@@ -128,6 +129,9 @@ function CreateQuestForm({ onSuccess, onCancel }: { onSuccess: (quest: Quest) =>
         startDate: new Date(startDate).toISOString(),
       };
 
+      if (imageUrl) {
+        data.imageUrl = imageUrl;
+      }
       if (maxParticipants) {
         data.maxParticipants = parseInt(maxParticipants);
       }
@@ -168,6 +172,13 @@ function CreateQuestForm({ onSuccess, onCancel }: { onSuccess: (quest: Quest) =>
           required
         />
       </div>
+
+      <ImageUpload
+        category="quests"
+        value={imageUrl}
+        onChange={setImageUrl}
+        label="Quest Image (optional)"
+      />
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Quest Type</label>

@@ -13,6 +13,10 @@ export class UpdateEventDto {
   description?: string;
 
   @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
   @IsDateString()
   eventDate?: string;
 }

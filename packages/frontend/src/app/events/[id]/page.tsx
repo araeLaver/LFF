@@ -114,7 +114,19 @@ export default function EventDetailPage() {
         Back to Events
       </Link>
 
-      <Card variant="bordered">
+      <Card variant="bordered" className="overflow-hidden">
+        {/* Event Image */}
+        {event.imageUrl && (
+          <div className="relative h-64 w-full">
+            <img
+              src={event.imageUrl}
+              alt={event.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+          </div>
+        )}
+
         <CardHeader>
           <div className="flex items-center gap-3 mb-4">
             <span className={`inline-block px-3 py-1 text-sm font-medium rounded ${statusColors[event.status]}`}>

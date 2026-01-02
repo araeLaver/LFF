@@ -2,8 +2,11 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { BlockchainService } from '../blockchain/blockchain.service';
+import { MetadataService } from '../blockchain/metadata.service';
 import { CreateQuestDto } from './dto/create-quest.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
 import { SubmitQuestDto } from './dto/submit-quest.dto';
@@ -11,7 +14,13 @@ import { SubmissionStatus } from '@prisma/client';
 
 @Injectable()
 export class QuestService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(QuestService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private blockchainService: BlockchainService,
+    private metadataService: MetadataService,
+  ) {}
 
   async createQuest(creatorId: string, dto: CreateQuestDto) {
     return this.prisma.quest.create({
@@ -129,10 +138,48 @@ export class QuestService {
       throw new ForbiddenException('Not authorized to review this submission');
     }
 
-    return this.prisma.questSubmission.update({
+    const updatedSubmission = await this.prisma.questSubmission.update({
       where: { id: submissionId },
       data: { status },
+      include: { quest: true, user: true },
     });
+
+    // Mint SBT when submission is approved
+    let mintResult = null;
+    if (status === SubmissionStatus.APPROVED && this.blockchainService.isReady()) {
+      try {
+        const wallet = await this.prisma.wallet.findUnique({
+          where: { userId: submission.userId },
+        });
+
+        if (wallet) {
+          const metadataUri = `${process.env.BACKEND_URL || 'http://localhost:3001'}/api/metadata/quest/${submission.questId}/${submission.userId}`;
+
+          mintResult = await this.blockchainService.mintQuestCompletion(
+            wallet.address,
+            metadataUri,
+            submission.questId,
+          );
+
+          this.logger.log(
+            `Quest SBT minted for user ${submission.userId}: tokenId=${mintResult.tokenId}`,
+          );
+
+          await this.prisma.nFT.create({
+            data: {
+              tokenId: mintResult.tokenId,
+              contractAddress: this.blockchainService.getContractAddress(),
+              metadataUrl: metadataUri,
+              ownerId: wallet.id,
+            },
+          });
+        }
+      } catch (error) {
+        this.logger.error(`Failed to mint quest SBT: ${error.message}`);
+      }
+    }
+
+    return { submission: updatedSubmission, mintResult };
   }
 
   async getUserSubmissions(userId: string) {
