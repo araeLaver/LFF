@@ -180,7 +180,7 @@ export interface SignupDto {
 }
 
 export interface AuthResponse {
-  access_token: string;
+  accessToken: string;
   user: User;
 }
 

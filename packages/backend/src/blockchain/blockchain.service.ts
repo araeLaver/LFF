@@ -130,7 +130,7 @@ export class BlockchainService implements OnModuleInit {
 
       // Parse TokenMinted event to get tokenId
       const mintEvent = receipt.logs.find(
-        (log) =>
+        (log: { topics: string[] }) =>
           log.topics[0] ===
           ethers.id('TokenMinted(uint256,address,uint8,string)'),
       );

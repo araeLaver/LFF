@@ -149,7 +149,7 @@ export class NftService {
             if (tokenType === 'EVENT_ATTENDANCE') {
               event = await this.prisma.event
                 .findUnique({
-                  where: { id: referenceId },
+                  where: { id: referenceId || undefined },
                   include: {
                     creator: {
                       include: { user: { include: { profile: true } } },
@@ -160,7 +160,7 @@ export class NftService {
             } else {
               quest = await this.prisma.quest
                 .findUnique({
-                  where: { id: referenceId },
+                  where: { id: referenceId || undefined },
                   include: {
                     creator: {
                       include: { user: { include: { profile: true } } },
@@ -192,7 +192,7 @@ export class NftService {
         if (tokenType === 'EVENT_ATTENDANCE') {
           event = await this.prisma.event
             .findUnique({
-              where: { id: referenceId },
+              where: { id: referenceId || undefined },
               include: {
                 creator: {
                   include: { user: { include: { profile: true } } },
@@ -203,7 +203,7 @@ export class NftService {
         } else {
           quest = await this.prisma.quest
             .findUnique({
-              where: { id: referenceId },
+              where: { id: referenceId || undefined },
               include: {
                 creator: {
                   include: { user: { include: { profile: true } } },

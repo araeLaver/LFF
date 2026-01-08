@@ -3,6 +3,8 @@
 
 datasource db {
   provider = "postgresql"
+  url      = "postgresql://user:password@127.0.0.1:5434/lff_db"
+  
 }
 
 generator client {

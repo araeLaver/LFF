@@ -96,7 +96,7 @@ class ApiClient {
       method: 'POST',
       body: data,
     });
-    setToken(response.access_token);
+    setToken(response.accessToken);
     return response;
   }
 
@@ -105,7 +105,7 @@ class ApiClient {
       method: 'POST',
       body: data,
     });
-    setToken(response.access_token);
+    setToken(response.accessToken);
     return response;
   }
 
@@ -131,7 +131,7 @@ class ApiClient {
 
   // Creators
   async becomeCreator(data: { displayName: string; description?: string }): Promise<Creator> {
-    return this.request<Creator>('/creators/register', {
+    return this.request<Creator>('/creators/become', {
       method: 'POST',
       body: data,
     });
@@ -155,11 +155,11 @@ class ApiClient {
   }
 
   async getActiveQuests(): Promise<Quest[]> {
-    return this.request<Quest[]>('/quests/active');
+    return this.request<Quest[]>('/quests');
   }
 
   async getMyQuests(): Promise<Quest[]> {
-    return this.request<Quest[]>('/quests/my-quests');
+    return this.request<Quest[]>('/quests/creator/my-quests');
   }
 
   async createQuest(data: CreateQuestDto): Promise<Quest> {
@@ -177,7 +177,7 @@ class ApiClient {
   }
 
   async getMySubmissions(): Promise<QuestSubmission[]> {
-    return this.request<QuestSubmission[]>('/quests/submissions/my');
+    return this.request<QuestSubmission[]>('/quests/user/my-submissions');
   }
 
   async reviewSubmission(
@@ -200,11 +200,11 @@ class ApiClient {
   }
 
   async getUpcomingEvents(): Promise<Event[]> {
-    return this.request<Event[]>('/events/upcoming');
+    return this.request<Event[]>('/events');
   }
 
   async getMyEvents(): Promise<Event[]> {
-    return this.request<Event[]>('/events/my-events');
+    return this.request<Event[]>('/events/creator/my-events');
   }
 
   async createEvent(data: CreateEventDto): Promise<Event> {

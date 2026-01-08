@@ -1,5 +1,5 @@
 import { Controller, Get, Param, Res, NotFoundException } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetadataService, NFTMetadata } from './metadata.service';
 
