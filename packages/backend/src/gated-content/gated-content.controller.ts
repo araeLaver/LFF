@@ -26,21 +26,12 @@ export class GatedContentController {
     return this.gatedContentService.findAllContent();
   }
 
-  @Get(':id/preview')
-  getPreview(@Param('id') id: string) {
-    return this.gatedContentService.getContentPreview(id);
-  }
-
-  @Get(':id')
-  @UseGuards(JwtAuthGuard)
-  getContent(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.gatedContentService.getContent(id, user.id);
-  }
-
-  @Get(':id/check-access')
-  @UseGuards(JwtAuthGuard)
-  checkAccess(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.gatedContentService.checkAccess(id, user.id);
+  // Creator routes (must be before :id routes)
+  @Get('creator/my-content')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CREATOR, Role.ADMIN)
+  getCreatorContent(@CurrentUser() user: any) {
+    return this.gatedContentService.getCreatorContent(user.creator.id);
   }
 
   @Post()
@@ -50,11 +41,31 @@ export class GatedContentController {
     return this.gatedContentService.createContent(user.creator.id, dto);
   }
 
-  @Get('creator/my-content')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.CREATOR, Role.ADMIN)
-  getCreatorContent(@CurrentUser() user: any) {
-    return this.gatedContentService.getCreatorContent(user.creator.id);
+  // Public preview (no auth required)
+  @Get(':id/preview')
+  getPreview(@Param('id') id: string) {
+    return this.gatedContentService.getContentPreview(id);
+  }
+
+  // Check access status
+  @Get(':id/check-access')
+  @UseGuards(JwtAuthGuard)
+  checkAccess(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.gatedContentService.checkAccess(id, user.id);
+  }
+
+  // Get access URL (after NFT verification)
+  @Get(':id/access')
+  @UseGuards(JwtAuthGuard)
+  getAccess(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.gatedContentService.getContentAccess(id, user.id);
+  }
+
+  // Get full content (with access check)
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  getContent(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.gatedContentService.getContent(id, user.id);
   }
 
   @Patch(':id')

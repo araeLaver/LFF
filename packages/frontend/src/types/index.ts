@@ -152,6 +152,7 @@ export interface NFT {
 
 // Gated Content types
 export type ContentType = 'VIDEO' | 'IMAGE' | 'AUDIO' | 'DOCUMENT' | 'OTHER';
+export type ContentStatus = 'DRAFT' | 'PUBLISHED';
 
 export interface GatedContent {
   id: string;
@@ -159,9 +160,12 @@ export interface GatedContent {
   title: string;
   description?: string;
   contentType: ContentType;
-  contentUrl: string;
-  requiredNftContract: string;
+  contentUrl?: string;
+  previewUrl?: string;
+  requiredNftContract?: string;
   requiredTokenId?: string;
+  requiredNftId?: string;
+  status: ContentStatus;
   createdAt: string;
   updatedAt: string;
   creator?: Creator;
@@ -227,8 +231,21 @@ export interface CreateGatedContentDto {
   description?: string;
   contentType: ContentType;
   contentUrl: string;
-  requiredNftContract: string;
+  previewUrl?: string;
+  requiredNftContract?: string;
   requiredTokenId?: string;
+  status?: ContentStatus;
+}
+
+export interface UpdateGatedContentDto {
+  title?: string;
+  description?: string;
+  contentType?: ContentType;
+  contentUrl?: string;
+  previewUrl?: string;
+  requiredNftContract?: string;
+  requiredTokenId?: string;
+  status?: ContentStatus;
 }
 
 export interface SubmitQuestDto {

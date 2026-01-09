@@ -12,17 +12,23 @@ generator client {
 }
 
 model User {
-  id              String             @id @default(cuid())
-  email           String             @unique
-  password        String
-  role            Role               @default(USER)
-  profile         Profile?
-  wallet          Wallet?
-  submissions     QuestSubmission[]
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  creator         Creator?
-  qrRedemptions   QRCodeRedemption[]
+  id                String             @id @default(cuid())
+  email             String             @unique
+  password          String?            // Optional for OAuth users
+  provider          String?            // 'local', 'google', 'kakao'
+  providerId        String?            // OAuth provider user ID
+  role              Role               @default(USER)
+  profile           Profile?
+  wallet            Wallet?
+  submissions       QuestSubmission[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  creator           Creator?
+  qrRedemptions     QRCodeRedemption[]
+  notifications     Notification[]
+  pushSubscriptions PushSubscription[]
+
+  @@unique([provider, providerId])
 }
 
 model Profile {
@@ -37,14 +43,16 @@ model Profile {
 }
 
 model Wallet {
-  id         String   @id @default(cuid())
-  address    String   @unique
-  privateKey String // Note: In a real app, this should be encrypted and stored securely
-  user       User     @relation(fields: [userId], references: [id])
-  userId     String   @unique
+  id         String      @id @default(cuid())
+  address    String      @unique
+  privateKey String?     // Only for platform-created wallets (should be encrypted)
+  isExternal Boolean     @default(false) // true for user-connected wallets (MetaMask, etc.)
+  chainId    Int?        // Chain ID for external wallets
+  user       User        @relation(fields: [userId], references: [id])
+  userId     String      @unique
   nfts       NFT[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
 
 model Creator {
@@ -54,6 +62,7 @@ model Creator {
   quests       Quest[]
   gatedContent GatedContent[]
   events       Event[]
+  mintedNfts   NFT[]          // NFTs minted by this creator
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 }
@@ -121,15 +130,34 @@ model QuestSubmission {
 }
 
 model GatedContent {
-  id            String   @id @default(cuid())
-  title         String
-  content       String
-  requiredNft   NFT?     @relation(fields: [requiredNftId], references: [id])
-  requiredNftId String?
-  creator       Creator  @relation(fields: [creatorId], references: [id])
-  creatorId     String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                  String        @id @default(cuid())
+  title               String
+  description         String?
+  contentType         ContentType   @default(OTHER)
+  contentUrl          String        // URL to the actual content
+  previewUrl          String?       // Preview image/thumbnail
+  requiredNftContract String?       // Contract address for access control
+  requiredTokenId     String?       // Specific token ID (optional)
+  requiredNft         NFT?          @relation(fields: [requiredNftId], references: [id])
+  requiredNftId       String?
+  status              ContentStatus @default(PUBLISHED)
+  creator             Creator       @relation(fields: [creatorId], references: [id])
+  creatorId           String
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+}
+
+enum ContentType {
+  VIDEO
+  IMAGE
+  AUDIO
+  DOCUMENT
+  OTHER
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
 }
 
 model NFT {
@@ -137,12 +165,25 @@ model NFT {
   tokenId         String         @unique
   contractAddress String
   metadataUrl     String
+  tokenType       TokenType?     // SBT type (EVENT_ATTENDANCE, QUEST_COMPLETION)
+  referenceId     String?        // Quest ID or Event ID
+  name            String?
+  description     String?
+  imageUrl        String?
+  transactionHash String?        // Blockchain transaction hash
+  mintedBy        Creator?       @relation(fields: [mintedById], references: [id])
+  mintedById      String?        // Creator who minted this NFT
   owner           Wallet         @relation(fields: [ownerId], references: [id])
   ownerId         String
   gatedContent    GatedContent[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   eventRewardFor  Event?
+}
+
+enum TokenType {
+  EVENT_ATTENDANCE
+  QUEST_COMPLETION
 }
 
 enum Role {
@@ -155,4 +196,36 @@ enum SubmissionStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?            // Additional data (questId, eventId, etc.)
+  isRead    Boolean          @default(false)
+  user      User             @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime         @default(now())
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String   // Public key
+  auth      String   // Auth secret
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum NotificationType {
+  QUEST_APPROVED
+  QUEST_REJECTED
+  EVENT_REMINDER
+  NEW_CONTENT
+  NFT_MINTED
+  SYSTEM
 }

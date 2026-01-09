@@ -5,6 +5,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { KakaoStrategy } from './strategies/kakao.strategy';
 import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
@@ -23,7 +25,7 @@ import { WalletModule } from '../wallet/wallet.module';
     WalletModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, GoogleStrategy, KakaoStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

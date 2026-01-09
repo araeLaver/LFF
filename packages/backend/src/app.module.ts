@@ -15,6 +15,8 @@ import { NftModule } from './nft/nft.module';
 import { WalletModule } from './wallet/wallet.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { UploadModule } from './upload/upload.module';
+import { AdminModule } from './admin/admin.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -36,6 +38,8 @@ import { UploadModule } from './upload/upload.module';
     WalletModule,
     BlockchainModule,
     UploadModule,
+    AdminModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

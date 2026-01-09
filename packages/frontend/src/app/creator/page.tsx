@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
-import { Quest, Event } from '@/types';
+import { Quest, Event, GatedContent } from '@/types';
 import { Card, CardHeader, CardTitle, CardContent, Button, Loading } from '@/components/ui';
 
 export default function CreatorDashboard() {
@@ -13,6 +13,7 @@ export default function CreatorDashboard() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [quests, setQuests] = useState<Quest[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [gatedContents, setGatedContents] = useState<GatedContent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -31,9 +32,14 @@ export default function CreatorDashboard() {
 
       setIsLoading(true);
       try {
-        const [questsData, eventsData] = await Promise.all([api.getMyQuests(), api.getMyEvents()]);
+        const [questsData, eventsData, contentsData] = await Promise.all([
+          api.getMyQuests(),
+          api.getMyEvents(),
+          api.getMyGatedContent(),
+        ]);
         setQuests(questsData);
         setEvents(eventsData);
+        setGatedContents(contentsData);
       } catch (error) {
         console.error('Failed to fetch data:', error);
       } finally {
@@ -55,8 +61,18 @@ export default function CreatorDashboard() {
     { label: 'Total Quests', value: quests.length, href: '/creator/quests' },
     { label: 'Active Quests', value: quests.filter((q) => q.status === 'ACTIVE').length, href: '/creator/quests' },
     { label: 'Total Events', value: events.length, href: '/creator/events' },
-    { label: 'Upcoming Events', value: events.filter((e) => e.status === 'UPCOMING').length, href: '/creator/events' },
+    { label: 'Gated Contents', value: gatedContents.length, href: '/creator/gated-content' },
   ];
+
+  const contentTypeIcon = (type: string) => {
+    switch (type) {
+      case 'VIDEO': return '🎬';
+      case 'IMAGE': return '🖼️';
+      case 'AUDIO': return '🎵';
+      case 'DOCUMENT': return '📄';
+      default: return '📦';
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -82,7 +98,7 @@ export default function CreatorDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card variant="bordered">
           <CardHeader>
             <CardTitle>Quests</CardTitle>
@@ -116,10 +132,41 @@ export default function CreatorDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        <Card variant="bordered">
+          <CardHeader>
+            <CardTitle>Gated Content</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">NFT holder exclusive content</p>
+            <div className="flex gap-2">
+              <Link href="/creator/gated-content">
+                <Button variant="outline">View All</Button>
+              </Link>
+              <Link href="/creator/gated-content?new=true">
+                <Button>Create Content</Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card variant="bordered">
+          <CardHeader>
+            <CardTitle>Mint SBT</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">Mint Soulbound Tokens directly to fans</p>
+            <div className="flex gap-2">
+              <Link href="/creator/mint">
+                <Button>Mint SBT</Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Recent Activity */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Recent Quests */}
         <Card variant="bordered">
           <CardHeader>
@@ -135,11 +182,11 @@ export default function CreatorDashboard() {
               <Loading text="Loading..." />
             ) : quests.length > 0 ? (
               <div className="space-y-3">
-                {quests.slice(0, 5).map((quest) => (
+                {quests.slice(0, 4).map((quest) => (
                   <div key={quest.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                     <div>
-                      <p className="font-medium">{quest.title}</p>
-                      <p className="text-sm text-gray-500">{quest._count?.submissions || 0} submissions</p>
+                      <p className="font-medium text-sm">{quest.title}</p>
+                      <p className="text-xs text-gray-500">{quest._count?.submissions || 0} submissions</p>
                     </div>
                     <span
                       className={`px-2 py-1 text-xs rounded ${
@@ -174,11 +221,11 @@ export default function CreatorDashboard() {
               <Loading text="Loading..." />
             ) : events.length > 0 ? (
               <div className="space-y-3">
-                {events.slice(0, 5).map((event) => (
+                {events.slice(0, 4).map((event) => (
                   <div key={event.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                     <div>
-                      <p className="font-medium">{event.title}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="font-medium text-sm">{event.title}</p>
+                      <p className="text-xs text-gray-500">
                         {new Date(event.startDate).toLocaleDateString()}
                       </p>
                     </div>
@@ -198,6 +245,48 @@ export default function CreatorDashboard() {
               </div>
             ) : (
               <p className="text-gray-500 text-center py-4">No events yet</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Gated Content */}
+        <Card variant="bordered">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle>Gated Content</CardTitle>
+              <Link href="/creator/gated-content" className="text-blue-600 text-sm hover:underline">
+                View all
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Loading text="Loading..." />
+            ) : gatedContents.length > 0 ? (
+              <div className="space-y-3">
+                {gatedContents.slice(0, 4).map((content) => (
+                  <div key={content.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{contentTypeIcon(content.contentType)}</span>
+                      <div>
+                        <p className="font-medium text-sm">{content.title}</p>
+                        <p className="text-xs text-gray-500">{content.contentType}</p>
+                      </div>
+                    </div>
+                    <span
+                      className={`px-2 py-1 text-xs rounded ${
+                        content.status === 'PUBLISHED'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}
+                    >
+                      {content.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No gated content yet</p>
             )}
           </CardContent>
         </Card>

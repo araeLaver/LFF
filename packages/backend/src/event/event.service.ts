@@ -190,6 +190,10 @@ export class EventService {
               tokenId: mintResult.tokenId,
               contractAddress: this.blockchainService.getContractAddress(),
               metadataUrl: metadataUri,
+              tokenType: 'EVENT_ATTENDANCE',
+              referenceId: qrcode.eventId,
+              name: `Event: ${qrcode.event.title}`,
+              description: `Attended "${qrcode.event.title}" on ${qrcode.event.eventDate.toLocaleDateString()}`,
               ownerId: wallet.id,
             },
           });

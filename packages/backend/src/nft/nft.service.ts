@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService, TokenType } from '../blockchain/blockchain.service';
+import { MintNftDto, MintTokenType } from './dto/mint-nft.dto';
 
 export interface NFTWithMetadata {
   id: string;
@@ -89,6 +90,158 @@ export class NftService {
         ownerId,
       },
     });
+  }
+
+  /**
+   * Mint SBT as a creator (manual minting)
+   */
+  async creatorMintNft(creatorId: string, dto: MintNftDto) {
+    // Verify creator exists
+    const creator = await this.prisma.creator.findUnique({
+      where: { userId: creatorId },
+    });
+
+    if (!creator) {
+      throw new BadRequestException('You are not a registered creator');
+    }
+
+    // Check if blockchain service is ready
+    if (!this.blockchainService.isReady()) {
+      throw new BadRequestException('Blockchain service is not available');
+    }
+
+    // Validate recipient address format
+    if (!dto.recipientAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+      throw new BadRequestException('Invalid wallet address format');
+    }
+
+    // Generate metadata URI
+    const metadataUri = `${process.env.BACKEND_URL || 'http://localhost:3001'}/api/metadata/custom/${creatorId}/${Date.now()}`;
+
+    // Determine blockchain token type
+    const blockchainTokenType = dto.tokenType === MintTokenType.EVENT_ATTENDANCE
+      ? TokenType.EVENT_ATTENDANCE
+      : TokenType.QUEST_COMPLETION;
+
+    // Mint on blockchain
+    let mintResult;
+    try {
+      if (dto.tokenType === MintTokenType.EVENT_ATTENDANCE) {
+        mintResult = await this.blockchainService.mintEventAttendance(
+          dto.recipientAddress,
+          metadataUri,
+          dto.referenceId || `custom-${Date.now()}`,
+        );
+      } else {
+        mintResult = await this.blockchainService.mintQuestCompletion(
+          dto.recipientAddress,
+          metadataUri,
+          dto.referenceId || `custom-${Date.now()}`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(`Blockchain minting failed: ${error.message}`);
+      throw new BadRequestException(`Minting failed: ${error.message}`);
+    }
+
+    // Find or create wallet for recipient
+    let wallet = await this.prisma.wallet.findUnique({
+      where: { address: dto.recipientAddress.toLowerCase() },
+    });
+
+    if (!wallet) {
+      // Create a placeholder wallet record for tracking
+      // Note: This won't be linked to a user until they connect
+      const placeholderUser = await this.prisma.user.create({
+        data: {
+          email: `wallet-${dto.recipientAddress.toLowerCase().slice(0, 10)}@placeholder.local`,
+          password: null,
+          profile: {
+            create: {
+              nickname: `Wallet ${dto.recipientAddress.slice(0, 6)}...${dto.recipientAddress.slice(-4)}`,
+            },
+          },
+        },
+      });
+
+      wallet = await this.prisma.wallet.create({
+        data: {
+          address: dto.recipientAddress.toLowerCase(),
+          isExternal: true,
+          userId: placeholderUser.id,
+        },
+      });
+    }
+
+    // Get creator record
+    const creatorRecord = await this.prisma.creator.findUnique({
+      where: { userId: creatorId },
+    });
+
+    // Save NFT record
+    const nft = await this.prisma.nFT.create({
+      data: {
+        tokenId: mintResult.tokenId,
+        contractAddress: this.blockchainService.getContractAddress(),
+        metadataUrl: metadataUri,
+        tokenType: dto.tokenType === MintTokenType.CUSTOM ? null : dto.tokenType,
+        referenceId: dto.referenceId,
+        name: dto.name,
+        description: dto.description,
+        imageUrl: dto.imageUrl,
+        transactionHash: mintResult.transactionHash,
+        mintedById: creatorRecord?.id,
+        ownerId: wallet.id,
+      },
+    });
+
+    this.logger.log(`Creator ${creatorId} minted SBT: tokenId=${mintResult.tokenId} to ${dto.recipientAddress}`);
+
+    return {
+      tokenId: mintResult.tokenId,
+      transactionHash: mintResult.transactionHash,
+      blockNumber: mintResult.blockNumber,
+      nft,
+    };
+  }
+
+  /**
+   * Get minting history for a creator
+   */
+  async getCreatorMintingHistory(creatorId: string) {
+    const creator = await this.prisma.creator.findUnique({
+      where: { userId: creatorId },
+    });
+
+    if (!creator) {
+      return [];
+    }
+
+    const nfts = await this.prisma.nFT.findMany({
+      where: { mintedById: creator.id },
+      include: {
+        owner: {
+          include: {
+            user: { include: { profile: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return nfts.map((nft) => ({
+      id: nft.id,
+      tokenId: nft.tokenId,
+      name: nft.name,
+      description: nft.description,
+      imageUrl: nft.imageUrl,
+      tokenType: nft.tokenType,
+      referenceId: nft.referenceId,
+      transactionHash: nft.transactionHash,
+      recipientAddress: nft.owner.address,
+      recipientNickname: nft.owner.user?.profile?.nickname,
+      mintedAt: nft.createdAt,
+    }));
   }
 
   async getAllNfts(): Promise<NFTWithMetadata[]> {

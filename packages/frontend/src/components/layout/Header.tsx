@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
+import { ConnectWallet } from '@/components/wallet';
+import { NotificationDropdown } from '@/components/notifications';
 import { useState } from 'react';
 
 export default function Header() {
@@ -30,15 +32,22 @@ export default function Header() {
             <Link href="/content" className="text-gray-600 hover:text-blue-600 transition-colors">
               Content
             </Link>
-            {isAuthenticated && user?.role === 'CREATOR' && (
+            {isAuthenticated && (user?.role === 'CREATOR' || user?.role === 'ADMIN') && (
               <Link href="/creator" className="text-gray-600 hover:text-blue-600 transition-colors">
                 Creator Dashboard
               </Link>
             )}
+            {isAuthenticated && user?.role === 'ADMIN' && (
+              <Link href="/admin" className="text-red-600 hover:text-red-700 transition-colors font-medium">
+                Admin
+              </Link>
+            )}
           </nav>
 
-          {/* Auth Buttons */}
+          {/* Auth & Wallet Buttons */}
           <div className="hidden md:flex items-center gap-3">
+            <ConnectWallet />
+            {isAuthenticated && <NotificationDropdown />}
             {isAuthenticated ? (
               <>
                 <Link href="/mypage">
@@ -107,7 +116,7 @@ export default function Header() {
               >
                 Content
               </Link>
-              {isAuthenticated && user?.role === 'CREATOR' && (
+              {isAuthenticated && (user?.role === 'CREATOR' || user?.role === 'ADMIN') && (
                 <Link
                   href="/creator"
                   className="text-gray-600 hover:text-blue-600 py-2"
@@ -116,7 +125,19 @@ export default function Header() {
                   Creator Dashboard
                 </Link>
               )}
+              {isAuthenticated && user?.role === 'ADMIN' && (
+                <Link
+                  href="/admin"
+                  className="text-red-600 hover:text-red-700 py-2 font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Admin
+                </Link>
+              )}
               <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
+                <div className="py-2">
+                  <ConnectWallet />
+                </div>
                 {isAuthenticated ? (
                   <>
                     <Link href="/mypage" onClick={() => setIsMenuOpen(false)}>

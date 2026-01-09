@@ -248,4 +248,91 @@ export class BlockchainService implements OnModuleInit {
   getMinterAddress(): string {
     return this.wallet?.address || '';
   }
+
+  /**
+   * Check ERC721 NFT ownership
+   */
+  async checkERC721Ownership(
+    contractAddress: string,
+    ownerAddress: string,
+    tokenId?: string,
+  ): Promise<boolean> {
+    if (!this.provider) {
+      this.logger.warn('Provider not initialized for NFT check');
+      return false;
+    }
+
+    try {
+      const erc721Abi = [
+        'function balanceOf(address owner) view returns (uint256)',
+        'function ownerOf(uint256 tokenId) view returns (address)',
+      ];
+
+      const contract = new Contract(contractAddress, erc721Abi, this.provider);
+
+      if (tokenId) {
+        // Check specific token ownership
+        const owner = await contract.ownerOf(tokenId);
+        return owner.toLowerCase() === ownerAddress.toLowerCase();
+      } else {
+        // Check if user has any tokens from this contract
+        const balance = await contract.balanceOf(ownerAddress);
+        return balance > 0n;
+      }
+    } catch (error) {
+      this.logger.error(`ERC721 ownership check failed: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Check ERC1155 NFT ownership
+   */
+  async checkERC1155Ownership(
+    contractAddress: string,
+    ownerAddress: string,
+    tokenId: string,
+  ): Promise<boolean> {
+    if (!this.provider) {
+      this.logger.warn('Provider not initialized for NFT check');
+      return false;
+    }
+
+    try {
+      const erc1155Abi = [
+        'function balanceOf(address account, uint256 id) view returns (uint256)',
+      ];
+
+      const contract = new Contract(contractAddress, erc1155Abi, this.provider);
+      const balance = await contract.balanceOf(ownerAddress, tokenId);
+      return balance > 0n;
+    } catch (error) {
+      this.logger.error(`ERC1155 ownership check failed: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Check NFT ownership (tries ERC721 first, then ERC1155)
+   */
+  async checkNFTOwnership(
+    contractAddress: string,
+    ownerAddress: string,
+    tokenId?: string,
+  ): Promise<boolean> {
+    // Try ERC721 first
+    const erc721Result = await this.checkERC721Ownership(
+      contractAddress,
+      ownerAddress,
+      tokenId,
+    );
+    if (erc721Result) return true;
+
+    // If tokenId is provided and ERC721 failed, try ERC1155
+    if (tokenId) {
+      return this.checkERC1155Ownership(contractAddress, ownerAddress, tokenId);
+    }
+
+    return false;
+  }
 }

@@ -74,22 +74,40 @@ function ContentCard({ content }: { content: GatedContent }) {
     OTHER: 'bg-gray-100 text-gray-600',
   };
 
+  const isGated = content.requiredNftContract || content.requiredNftId;
+  const creatorName = content.creator?.user?.profile?.nickname || 'Creator';
+
   return (
     <Link href={`/content/${content.id}`}>
       <Card variant="bordered" className="h-full hover:shadow-lg transition-shadow cursor-pointer overflow-hidden">
-        <div className="h-40 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-          <div className={`p-4 rounded-full ${typeColors[content.contentType]}`}>
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={typeIcons[content.contentType]} />
-            </svg>
+        {content.previewUrl ? (
+          <div
+            className="h-40 bg-cover bg-center"
+            style={{ backgroundImage: `url(${content.previewUrl})` }}
+          />
+        ) : (
+          <div className="h-40 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+            <div className={`p-4 rounded-full ${typeColors[content.contentType]}`}>
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={typeIcons[content.contentType]} />
+              </svg>
+            </div>
           </div>
-        </div>
+        )}
         <CardHeader>
           <div className="flex items-center gap-2 mb-2">
             <span className={`px-2 py-1 text-xs font-medium rounded ${typeColors[content.contentType]}`}>
               {content.contentType}
             </span>
-            <span className="px-2 py-1 text-xs font-medium rounded bg-yellow-100 text-yellow-700">NFT Required</span>
+            {isGated ? (
+              <span className="px-2 py-1 text-xs font-medium rounded bg-yellow-100 text-yellow-700">
+                NFT Required
+              </span>
+            ) : (
+              <span className="px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-700">
+                Free Access
+              </span>
+            )}
           </div>
           <CardTitle className="line-clamp-2">{content.title}</CardTitle>
         </CardHeader>
@@ -97,9 +115,9 @@ function ContentCard({ content }: { content: GatedContent }) {
           {content.description && <p className="text-gray-600 text-sm line-clamp-2 mb-3">{content.description}</p>}
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium">
-              {content.creator?.displayName?.charAt(0) || 'C'}
+              {creatorName.charAt(0).toUpperCase()}
             </div>
-            <span className="text-sm text-gray-600">{content.creator?.displayName || 'Creator'}</span>
+            <span className="text-sm text-gray-600">{creatorName}</span>
           </div>
         </CardContent>
       </Card>

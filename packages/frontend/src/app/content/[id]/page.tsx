@@ -15,13 +15,17 @@ export default function ContentDetailPage() {
   const [content, setContent] = useState<GatedContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const [isCheckingAccess, setIsCheckingAccess] = useState(false);
   const [accessUrl, setAccessUrl] = useState<string | null>(null);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+  const [accessReason, setAccessReason] = useState<string>('');
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const data = await api.getGatedContent(params.id as string);
+        // Use preview endpoint which doesn't require auth
+        const data = await api.getGatedContentPreview(params.id as string);
         setContent(data);
       } catch (error) {
         console.error('Failed to fetch content:', error);
@@ -31,6 +35,33 @@ export default function ContentDetailPage() {
     };
     fetchContent();
   }, [params.id]);
+
+  // Check access when user is authenticated
+  useEffect(() => {
+    const checkAccess = async () => {
+      if (!isAuthenticated || !content) return;
+
+      const isGated = content.requiredNftContract || content.requiredNftId;
+      if (!isGated) {
+        setHasAccess(true);
+        return;
+      }
+
+      setIsCheckingAccess(true);
+      try {
+        const result = await api.checkGatedContentAccess(params.id as string);
+        setHasAccess(result.hasAccess);
+        if (!result.hasAccess && result.reason) {
+          setAccessReason(result.reason);
+        }
+      } catch (err) {
+        console.error('Failed to check access:', err);
+      } finally {
+        setIsCheckingAccess(false);
+      }
+    };
+    checkAccess();
+  }, [isAuthenticated, content, params.id]);
 
   const handleUnlock = async () => {
     if (!isAuthenticated) {
@@ -89,6 +120,9 @@ export default function ContentDetailPage() {
     OTHER: 'bg-gray-100 text-gray-600',
   };
 
+  const isGated = content.requiredNftContract || content.requiredNftId;
+  const creatorName = content.creator?.user?.profile?.nickname || 'Creator';
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Link href="/content" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6">
@@ -100,7 +134,7 @@ export default function ContentDetailPage() {
 
       <Card variant="bordered">
         {/* Content Preview */}
-        <div className="h-64 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center rounded-t-xl">
+        <div className="h-64 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center rounded-t-xl overflow-hidden">
           {accessUrl ? (
             <div className="text-center">
               <p className="text-green-600 font-medium mb-4">Content Unlocked!</p>
@@ -121,6 +155,12 @@ export default function ContentDetailPage() {
                 View Content
               </a>
             </div>
+          ) : content.previewUrl ? (
+            <img
+              src={content.previewUrl}
+              alt={content.title}
+              className="w-full h-full object-cover"
+            />
           ) : (
             <div className={`p-6 rounded-full ${typeColors[content.contentType]}`}>
               <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,7 +180,20 @@ export default function ContentDetailPage() {
             <span className={`px-2 py-1 text-xs font-medium rounded ${typeColors[content.contentType]}`}>
               {content.contentType}
             </span>
-            <span className="px-2 py-1 text-xs font-medium rounded bg-yellow-100 text-yellow-700">NFT Gated</span>
+            {isGated ? (
+              <span className="px-2 py-1 text-xs font-medium rounded bg-yellow-100 text-yellow-700">
+                NFT Gated
+              </span>
+            ) : (
+              <span className="px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-700">
+                Free Access
+              </span>
+            )}
+            {isAuthenticated && hasAccess === true && (
+              <span className="px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-700">
+                Access Granted
+              </span>
+            )}
           </div>
           <CardTitle className="text-2xl">{content.title}</CardTitle>
         </CardHeader>
@@ -149,10 +202,10 @@ export default function ContentDetailPage() {
           {/* Creator Info */}
           <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
             <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-lg font-medium">
-              {content.creator?.displayName?.charAt(0) || 'C'}
+              {creatorName.charAt(0).toUpperCase()}
             </div>
             <div>
-              <p className="font-medium">{content.creator?.displayName || 'Creator'}</p>
+              <p className="font-medium">{creatorName}</p>
               <p className="text-sm text-gray-500">Content Creator</p>
             </div>
           </div>
@@ -166,26 +219,56 @@ export default function ContentDetailPage() {
           )}
 
           {/* NFT Requirement */}
-          <div className="p-4 border border-yellow-200 bg-yellow-50 rounded-lg">
-            <h3 className="font-semibold text-yellow-800 mb-2">NFT Required</h3>
-            <p className="text-sm text-yellow-700 mb-2">To access this content, you need to own an NFT from:</p>
-            <p className="font-mono text-xs text-yellow-800 bg-yellow-100 p-2 rounded break-all">
-              {content.requiredNftContract}
-            </p>
-            {content.requiredTokenId && (
-              <p className="text-sm text-yellow-700 mt-2">Specific Token ID: {content.requiredTokenId}</p>
-            )}
-          </div>
+          {isGated && (
+            <div className="p-4 border border-yellow-200 bg-yellow-50 rounded-lg">
+              <h3 className="font-semibold text-yellow-800 mb-2">NFT Required</h3>
+              <p className="text-sm text-yellow-700 mb-2">To access this content, you need to own an NFT from:</p>
+              {content.requiredNftContract && (
+                <p className="font-mono text-xs text-yellow-800 bg-yellow-100 p-2 rounded break-all">
+                  {content.requiredNftContract}
+                </p>
+              )}
+              {content.requiredTokenId && (
+                <p className="text-sm text-yellow-700 mt-2">Specific Token ID: {content.requiredTokenId}</p>
+              )}
+            </div>
+          )}
+
+          {/* Access Status */}
+          {isAuthenticated && isCheckingAccess && (
+            <div className="p-3 bg-blue-50 border border-blue-200 text-blue-600 rounded-lg text-sm flex items-center gap-2">
+              <Loading size="sm" />
+              Checking your access...
+            </div>
+          )}
+
+          {isAuthenticated && hasAccess === false && accessReason && (
+            <div className="p-3 bg-orange-50 border border-orange-200 text-orange-700 rounded-lg text-sm">
+              {accessReason}
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">{error}</div>
           )}
 
-          {/* Unlock Button */}
+          {/* Action Button */}
           {!accessUrl && (
-            <Button className="w-full" size="lg" onClick={handleUnlock} isLoading={isUnlocking}>
-              {isAuthenticated ? 'Unlock Content' : 'Login to Unlock'}
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={handleUnlock}
+              isLoading={isUnlocking}
+              disabled={isCheckingAccess || (isAuthenticated && hasAccess === false)}
+            >
+              {!isAuthenticated
+                ? 'Login to Access'
+                : hasAccess === true
+                ? 'Access Content'
+                : hasAccess === false
+                ? 'NFT Required'
+                : 'Check Access'}
             </Button>
           )}
         </CardContent>

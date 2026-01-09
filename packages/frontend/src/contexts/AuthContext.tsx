@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from '@/types';
 import api from '@/lib/api';
-import { getToken, removeToken, isTokenExpired } from '@/lib/auth';
+import { getToken, setToken, removeToken, isTokenExpired } from '@/lib/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -13,6 +13,7 @@ interface AuthContextType {
   signup: (email: string, password: string, nickname: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  setTokenAndFetchUser: (token: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -61,6 +62,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await fetchUser();
   };
 
+  const setTokenAndFetchUser = async (token: string) => {
+    setToken(token);
+    await fetchUser();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -71,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signup,
         logout,
         refreshUser,
+        setTokenAndFetchUser,
       }}
     >
       {children}

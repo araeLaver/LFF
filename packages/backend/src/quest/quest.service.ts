@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { MetadataService } from '../blockchain/metadata.service';
+import { NotificationService } from '../notification/notification.service';
 import { CreateQuestDto } from './dto/create-quest.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
 import { SubmitQuestDto } from './dto/submit-quest.dto';
@@ -20,6 +21,7 @@ export class QuestService {
     private prisma: PrismaService,
     private blockchainService: BlockchainService,
     private metadataService: MetadataService,
+    private notificationService: NotificationService,
   ) {}
 
   async createQuest(creatorId: string, dto: CreateQuestDto) {
@@ -170,6 +172,10 @@ export class QuestService {
               tokenId: mintResult.tokenId,
               contractAddress: this.blockchainService.getContractAddress(),
               metadataUrl: metadataUri,
+              tokenType: 'QUEST_COMPLETION',
+              referenceId: submission.questId,
+              name: `Quest: ${submission.quest.title}`,
+              description: `Completed quest "${submission.quest.title}"`,
               ownerId: wallet.id,
             },
           });
@@ -177,6 +183,21 @@ export class QuestService {
       } catch (error) {
         this.logger.error(`Failed to mint quest SBT: ${error.message}`);
       }
+    }
+
+    // Send notification
+    if (status === SubmissionStatus.APPROVED) {
+      await this.notificationService.notifyQuestApproved(
+        submission.userId,
+        submission.quest.title,
+        submission.questId,
+      );
+    } else if (status === SubmissionStatus.REJECTED) {
+      await this.notificationService.notifyQuestRejected(
+        submission.userId,
+        submission.quest.title,
+        submission.questId,
+      );
     }
 
     return { submission: updatedSubmission, mintResult };

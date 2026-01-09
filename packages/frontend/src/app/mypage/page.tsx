@@ -1,12 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWalletLink } from '@/hooks';
+import { useAccount } from 'wagmi';
 import api from '@/lib/api';
 import { NFT, QuestSubmission, Event } from '@/types';
 import { Card, CardHeader, CardTitle, CardContent, Button, Input, Loading } from '@/components/ui';
+import { ConnectWallet } from '@/components/wallet';
 import { NFTCard, NFTDetailModal } from '@/components/nft';
 
 type TabType = 'nfts' | 'submissions' | 'attendances' | 'profile';
@@ -24,6 +27,7 @@ export default function MyPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [nickname, setNickname] = useState('');
   const [bio, setBio] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
@@ -37,6 +41,7 @@ export default function MyPage() {
     if (user) {
       setNickname(user.profile?.nickname || '');
       setBio(user.profile?.bio || '');
+      setAvatarUrl(user.profile?.avatarUrl || '');
     }
   }, [user]);
 
@@ -68,7 +73,7 @@ export default function MyPage() {
     setSaveError('');
 
     try {
-      await api.updateProfile({ nickname, bio });
+      await api.updateProfile({ nickname, bio, avatarUrl: avatarUrl || undefined });
       await refreshUser();
       setIsEditing(false);
     } catch (err) {
@@ -97,9 +102,17 @@ export default function MyPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
-          {user?.profile?.nickname?.charAt(0) || 'U'}
-        </div>
+        {user?.profile?.avatarUrl ? (
+          <img
+            src={user.profile.avatarUrl}
+            alt={user.profile.nickname || 'Profile'}
+            className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+          />
+        ) : (
+          <div className="w-20 h-20 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
+            {user?.profile?.nickname?.charAt(0) || 'U'}
+          </div>
+        )}
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{user?.profile?.nickname || 'User'}</h1>
           <p className="text-gray-600">{user?.email}</p>
@@ -152,6 +165,8 @@ export default function MyPage() {
               setNickname={setNickname}
               bio={bio}
               setBio={setBio}
+              avatarUrl={avatarUrl}
+              setAvatarUrl={setAvatarUrl}
               isSaving={isSaving}
               saveError={saveError}
               onSave={handleSaveProfile}
@@ -366,6 +381,8 @@ interface ProfileTabProps {
   setNickname: (value: string) => void;
   bio: string;
   setBio: (value: string) => void;
+  avatarUrl: string;
+  setAvatarUrl: (value: string) => void;
   isSaving: boolean;
   saveError: string;
   onSave: () => void;
@@ -379,10 +396,37 @@ function ProfileTab({
   setNickname,
   bio,
   setBio,
+  avatarUrl,
+  setAvatarUrl,
   isSaving,
   saveError,
   onSave,
 }: ProfileTabProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const result = await api.uploadImage(file, 'profiles');
+      setAvatarUrl(result.url);
+    } catch (err) {
+      console.error('Failed to upload avatar:', err);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
   return (
     <Card variant="bordered">
       <CardHeader>
@@ -412,6 +456,59 @@ function ProfileTab({
 
         {isEditing ? (
           <>
+            {/* Avatar Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Profile Picture</label>
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
+                      {nickname?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                  >
+                    {uploadingAvatar ? 'Uploading...' : 'Change Photo'}
+                  </Button>
+                  {avatarUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAvatarUrl('')}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">PNG, JPG, GIF up to 5MB</p>
+            </div>
+
             <Input label="Nickname" value={nickname} onChange={(e) => setNickname(e.target.value)} />
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
@@ -445,13 +542,117 @@ function ProfileTab({
           </>
         )}
 
-        {user?.wallet && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Wallet Address</label>
-            <p className="text-gray-900 font-mono text-sm break-all">{user.wallet.address}</p>
-          </div>
-        )}
+        {/* Wallet Section */}
+        <WalletSection />
       </CardContent>
     </Card>
+  );
+}
+
+function WalletSection() {
+  const { address, isConnected } = useAccount();
+  const {
+    linkedWallet,
+    isWalletLinked,
+    isLinking,
+    isUnlinking,
+    isLoading,
+    error,
+    linkWallet,
+    unlinkWallet,
+  } = useWalletLink();
+
+  if (isLoading) {
+    return (
+      <div className="pt-4 border-t">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Wallet</label>
+        <div className="flex items-center gap-2 text-gray-500">
+          <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm">Loading wallet info...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pt-4 border-t">
+      <label className="block text-sm font-medium text-gray-700 mb-3">Wallet Connection</label>
+
+      {/* Connected Wallet Display */}
+      {isConnected && (
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Connected Wallet</p>
+              <p className="font-mono text-sm break-all">{address}</p>
+            </div>
+            <ConnectWallet showBalance={false} chainStatus="icon" accountStatus="avatar" />
+          </div>
+        </div>
+      )}
+
+      {/* Not Connected */}
+      {!isConnected && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-700 mb-3">
+            Connect your wallet to link it to your account and access NFT-gated content.
+          </p>
+          <ConnectWallet />
+        </div>
+      )}
+
+      {/* Linked Wallet Info */}
+      {linkedWallet && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-2 text-green-700 mb-2">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-medium text-sm">Wallet Linked</span>
+          </div>
+          <p className="font-mono text-xs break-all text-green-800">{linkedWallet.address}</p>
+        </div>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Link/Unlink Actions */}
+      <div className="flex gap-2">
+        {!linkedWallet && isConnected && (
+          <Button
+            onClick={linkWallet}
+            isLoading={isLinking}
+            disabled={isLinking}
+            size="sm"
+          >
+            Link Wallet to Account
+          </Button>
+        )}
+
+        {linkedWallet && !isWalletLinked && isConnected && (
+          <div className="text-sm text-yellow-600 p-3 bg-yellow-50 rounded-lg">
+            Your connected wallet ({address?.slice(0, 6)}...{address?.slice(-4)}) differs from your linked wallet.
+          </div>
+        )}
+
+        {linkedWallet && (
+          <Button
+            onClick={unlinkWallet}
+            isLoading={isUnlinking}
+            disabled={isUnlinking}
+            variant="outline"
+            size="sm"
+            className="text-red-600 hover:bg-red-50"
+          >
+            Unlink Wallet
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
