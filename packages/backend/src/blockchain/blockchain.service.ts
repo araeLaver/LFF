@@ -1,7 +1,12 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ethers, Contract, Wallet, JsonRpcProvider } from 'ethers';
-import * as LFFSBT_ABI from './abi/LFFSBT.json';
+import { ethers, Contract, Wallet, JsonRpcProvider, InterfaceAbi } from 'ethers';
+import * as LFFSBT_ABI_MODULE from './abi/LFFSBT.json';
+
+// Extract ABI array from module namespace (handles ESM/CJS interop)
+const LFFSBT_ABI: InterfaceAbi = Array.isArray(LFFSBT_ABI_MODULE)
+  ? LFFSBT_ABI_MODULE
+  : (LFFSBT_ABI_MODULE as unknown as { default: InterfaceAbi }).default;
 
 export enum TokenType {
   EVENT_ATTENDANCE = 0,

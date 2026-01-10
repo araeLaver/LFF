@@ -41,17 +41,34 @@
     - [x] 이벤트 QR 리딤 시 SBT 자동 민팅
     - [x] 퀘스트 승인 시 SBT 자동 민팅
 
-### Phase 5: Next Steps (Pending)
-- [ ] **Contract Deployment:**
-    - [ ] Polygon Amoy 테스트넷 배포
-    - [ ] 환경변수 설정 (SBT_CONTRACT_ADDRESS)
+### Phase 5: Additional Features (Completed)
+- [x] **Contract Deployment:**
+    - [x] Polygon Amoy 테스트넷 배포 (`0xb675FB5c63b33c3a431cb2eBBa0f6cDfd9A1de03`)
+    - [x] 환경변수 설정 (SBT_CONTRACT_ADDRESS)
+- [x] **Feature Expansion:**
+    - [x] 이미지 업로드 (Sharp 기반 WebP 최적화, 로컬 저장)
+    - [x] 소셜 로그인 (Google OAuth, Kakao OAuth)
+- [x] **Event System:**
+    - [x] 이벤트 CRUD API
+    - [x] QR 코드 생성 및 리딤
+    - [x] 이벤트 참석 시 SBT 자동 민팅
+- [x] **Admin Dashboard:**
+    - [x] 관리자 페이지 (사용자/퀘스트/이벤트/콘텐츠 관리)
+- [x] **Notifications:**
+    - [x] 알림 시스템 및 웹 푸시
+
+### Phase 6: Next Steps (Pending)
 - [ ] **Feature Expansion:**
-    - [ ] 이미지 업로드 (S3/Cloudinary)
     - [ ] 이메일 인증
-    - [ ] 소셜 로그인
+    - [ ] 비밀번호 재설정
+    - [ ] 클라우드 스토리지 연동 (S3/Cloudinary)
 - [ ] **Testing:**
     - [ ] Unit 테스트
     - [ ] E2E 테스트
 - [ ] **Deployment:**
     - [ ] CI/CD 파이프라인
     - [ ] 프로덕션 환경 설정
+- [ ] **Performance & Security:**
+    - [ ] Rate limiting
+    - [ ] 로깅 및 모니터링
+    - [ ] 보안 감사
