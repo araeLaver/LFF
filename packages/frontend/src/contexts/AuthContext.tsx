@@ -7,6 +7,7 @@ import { getToken, setToken, removeToken, isTokenExpired } from '@/lib/auth';
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        token: getToken(),
         isLoading,
         isAuthenticated: !!user,
         login,

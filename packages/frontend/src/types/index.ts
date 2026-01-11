@@ -2,6 +2,7 @@
 export interface User {
   id: string;
   email: string;
+  emailVerified: boolean;
   role: 'USER' | 'CREATOR' | 'ADMIN';
   createdAt: string;
   updatedAt: string;

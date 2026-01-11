@@ -8,6 +8,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { KakaoStrategy } from './strategies/kakao.strategy';
 import { WalletModule } from '../wallet/wallet.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { WalletModule } from '../wallet/wallet.module';
       inject: [ConfigService],
     }),
     WalletModule,
+    EmailModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, GoogleStrategy, KakaoStrategy],
